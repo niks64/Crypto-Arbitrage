@@ -59,7 +59,12 @@ if __name__ == "__main__":
     for pair in pairs:
         print(pair, ":", sushiswap.pairs_price[pair])
 
-    swaps = swaps.getSwaps()
+    detect_start = time.perf_counter()
+    swaps = swaps.getSwaps(pairs)
+    detect_end = time.perf_counter()
+    elapsed_time = detect_end - detect_start
+    print(f"Detect Phase: {elapsed_time: .2f} seconds")
+
 
     sendSwaps(swaps)
     

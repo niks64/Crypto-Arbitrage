@@ -98,7 +98,9 @@ def updatePairsInfo(pairs):
 def updatePrices(pairs):
     # update the prices array
     for pair in pairs:
-        pairs_price[pair] = (pairs_info[pair]['token0Price'], pairs_info[pair]['token1Price'])
+        first = decimal.Decimal(pairs_info[pair]['token0Price'])
+        second = decimal.Decimal(pairs_info[pair]['token1Price'])
+        pairs_price[pair] = (first, second)
     
     # slippage = decimal.Decimal("0.004")
     # price_impact = decimal.Decimal("0.005")
