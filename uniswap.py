@@ -23,7 +23,7 @@ def getResponse(query):
 def fillPairs(pairs):
     query = """
     {
-        pools(first:10, orderBy:volumeUSD, orderDirection:desc) {
+        pools(first:50, orderBy:volumeUSD, orderDirection:desc) {
             id
             token0 {
                 symbol
@@ -77,10 +77,12 @@ def getPairInfo(pair, pairs_id):
         }}
     }}
     """
+    data = getResponse(query)
+    if data is None:
+        print("Pool not found for:", pair)
+        return None
     
-    response = json.loads(requests.post(v3_url, json={'query': query}).text)
-    pools = response['data']['pools']
-    return pools[0]
+    return data['pools'][0]
 
 
 def updatePairsInfo(pairs):
@@ -94,23 +96,17 @@ def updatePairsInfo(pairs):
         pairs_info[pair] = res
 
 def updatePrices(pairs):
-    slippage = decimal.Decimal("0.004")
-    price_impact = decimal.Decimal("0.005")
+    # update the prices array
     for pair in pairs:
-        token0_price = decimal.Decimal(pairs_info[pair]['token0Price'])
-        token1_price = decimal.Decimal(pairs_info[pair]['token1Price'])
-
-        token0_price -= (slippage * token0_price + price_impact * token0_price)
-        token1_price -= (slippage * token1_price + price_impact * token1_price)
-        pairs_price[pair] = (token0_price, token1_price)
+        pairs_price[pair] = (pairs_info[pair]['token0Price'], pairs_info[pair]['token1Price'])
     
+    # slippage = decimal.Decimal("0.004")
+    # price_impact = decimal.Decimal("0.005")
+    # for pair in pairs:
+    #     token0_price = decimal.Decimal(pairs_info[pair]['token0Price'])
+    #     token1_price = decimal.Decimal(pairs_info[pair]['token1Price'])
 
-# if __name__ == "__main__":
-#     # Get the pairs to trade on
-#     fillPairs()
-
-#     # Fetch information for given trading pair
-#     for pair in pairs:
-#         print(pair, ": ", pairs_info[pair]['token0Price'], ",", pairs_info[pair]['token1Price'])
-
-# Calculate price based on the information
+    #     token0_price -= (slippage * token0_price + price_impact * token0_price)
+    #     token1_price -= (slippage * token1_price + price_impact * token1_price)
+    #     pairs_price[pair] = (token0_price, token1_price)
+    

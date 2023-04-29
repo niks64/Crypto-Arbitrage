@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
 
     print(f"Intialization Phase: {elapsed_time: .2f} seconds")
-
+    
     update_start = time.perf_counter()
     
     # Get the information for these pairs
@@ -49,6 +49,17 @@ if __name__ == "__main__":
     elapsed_time = update_end - update_start
     print(f"Update Phase: {elapsed_time: .2f} seconds")
 
+    print("Uniswap Info:")
+    for pair in pairs:
+        print(pair, ":", uniswap.pairs_price[pair])
+
+    print()
+
+    print("SushiSwap Info:")
+    for pair in pairs:
+        print(pair, ":", sushiswap.pairs_price[pair])
+
     swaps = swaps.getSwaps()
 
     sendSwaps(swaps)
+    

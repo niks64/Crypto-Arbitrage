@@ -1,6 +1,8 @@
 import requests
 import json
 import multiprocessing
+from functools import partial
+
 
 num_processes = multiprocessing.cpu_count()
 pairs_id = {}
@@ -26,9 +28,9 @@ def getReponse(query):
     
 
 def fillIds(pairs):
+    toRemove = []
     for pair in pairs:
         convertedPair = convertSymbolsToName(pair)
-
         query = """
         {{
             pairs(where:{{
@@ -50,13 +52,21 @@ def fillIds(pairs):
 
         data = getReponse(query)
         if data is None:
-            print("No pools found for", pair)
+            print("SushiSwap: No pairs found for", pair)
             continue
         
+        if len(data['pairs']) == 0:
+            print("SushiSwap: No pairs found for", pair)
+            toRemove.append(pair)
+            continue
+
         pool = data['pairs'][0]
         pairs_id[pair] = (pool['token0']['id'], pool['token1']['id'])
+    
+    for pair in toRemove:
+        pairs.remove(pair)
 
-def getPairInfo(pair):
+def getPairInfo(pair, pairs_id):
     ids = pairs_id[pair]
     query = f"""
     {{
@@ -91,9 +101,17 @@ def getPairInfo(pair):
     return data['pairs'][0]
 
 def updatePairsInfo(pairs):
-    for pair in pairs:
-        res = getPairInfo(pair)
+    pool = multiprocessing.Pool(processes=num_processes)
+    partial_func = partial(getPairInfo, pairs_id=pairs_id)
+    result = pool.map(partial_func, pairs)
+    pool.close()
+    pool.join()
+
+    for res, pair in zip(result, pairs):
         pairs_info[pair] = res
 
 def updatePrices(pairs):
-    pass
+    # update the prices array
+    for pair in pairs:
+        pairs_price[pair] = (pairs_info[pair]['token0Price'], pairs_info[pair]['token1Price'])
+
