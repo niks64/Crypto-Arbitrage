@@ -22,6 +22,7 @@ def getResponse(query):
         return None
 
 def fillTokenValues(pairs):
+    toRemove = []
     for pair in pairs:
         ids = pairs_id[pair]
         query = """
@@ -37,16 +38,25 @@ def fillTokenValues(pairs):
         
         # First ID
         data = getResponse(query.format(id=ids[0]))
+        if decimal.Decimal(data['token']['derivedETH']) == decimal.Decimal(0):
+            toRemove.append(pair)
+            continue
         token_values[pair[0]] = decimal.Decimal(data['token']['derivedETH']) * decimal.Decimal(data['bundle']['ethPriceUSD'])
         
         # Second ID
         data = getResponse(query.format(id=ids[1]))
+        if decimal.Decimal(data['token']['derivedETH']) == decimal.Decimal(0):
+            toRemove.append(pair)
+            continue
         token_values[pair[1]] = decimal.Decimal(data['token']['derivedETH']) * decimal.Decimal(data['bundle']['ethPriceUSD'])
+    
+    for pair in toRemove:
+        pairs.remove(pair)
 
 def fillPairs(pairs):
     query = """
     {
-        pools(first:40, orderBy:volumeUSD, orderDirection:desc) {
+        pools(first:50, orderBy:volumeUSD, orderDirection:desc, skip:20) {
             id
             token0 {
                 symbol

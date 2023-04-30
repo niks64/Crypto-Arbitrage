@@ -52,11 +52,11 @@ def fillIds(pairs):
 
         data = getReponse(query)
         if data is None:
-            print("SushiSwap: No pairs found for", pair)
+            #print("SushiSwap: No pairs found for", pair)
             continue
         
         if len(data['pairs']) == 0:
-            print("SushiSwap: No pairs found for", pair)
+            #print("SushiSwap: No pairs found for", pair)
             toRemove.append(pair)
             continue
 
