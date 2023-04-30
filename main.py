@@ -8,7 +8,7 @@ pairs = []
 def fillIds():
     sushiswap.fillIds(pairs)
 
-def sendSwaps(swaps):
+def sendSwap(swap):
     pass
 
 def updatePairsInfo():
@@ -20,7 +20,8 @@ def updatePrices():
     sushiswap.updatePrices(pairs)
 
 if __name__ == "__main__":
-    
+
+
     init_start = time.perf_counter()
 
     # Get the most liquid pairs
@@ -36,7 +37,7 @@ if __name__ == "__main__":
 
 
     print(f"Intialization Phase: {elapsed_time: .2f} seconds")
-    
+
     update_start = time.perf_counter()
     
     # Get the information for these pairs
@@ -44,27 +45,21 @@ if __name__ == "__main__":
 
     # Update the prices
     updatePrices()
+    
+    # Get the token prices in USD
+    uniswap.fillTokenValues(pairs)
 
     update_end = time.perf_counter()
     elapsed_time = update_end - update_start
     print(f"Update Phase: {elapsed_time: .2f} seconds")
 
-    print("Uniswap Info:")
-    for pair in pairs:
-        print(pair, ":", uniswap.pairs_price[pair])
-
-    print()
-
-    print("SushiSwap Info:")
-    for pair in pairs:
-        print(pair, ":", sushiswap.pairs_price[pair])
 
     detect_start = time.perf_counter()
+    
     swaps = swaps.getSwaps(pairs)
+    if len(swaps) != 0: sendSwap(swaps[0])
+    
     detect_end = time.perf_counter()
     elapsed_time = detect_end - detect_start
     print(f"Detect Phase: {elapsed_time: .2f} seconds")
-
-
-    sendSwaps(swaps)
     

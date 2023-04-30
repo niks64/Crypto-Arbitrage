@@ -9,6 +9,7 @@ num_processes = multiprocessing.cpu_count()
 pairs_id = {}
 pairs_info = {}
 pairs_price = {}
+token_values = {}
 v3_url = "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3"
 
 def getResponse(query):
@@ -20,10 +21,32 @@ def getResponse(query):
     except KeyError:
         return None
 
+def fillTokenValues(pairs):
+    for pair in pairs:
+        ids = pairs_id[pair]
+        query = """
+        {{
+            token(id: "{id}") {{
+                derivedETH
+            }}
+            bundle(id: "1") {{
+                ethPriceUSD
+            }}
+        }}
+        """
+        
+        # First ID
+        data = getResponse(query.format(id=ids[0]))
+        token_values[pair[0]] = decimal.Decimal(data['token']['derivedETH']) * decimal.Decimal(data['bundle']['ethPriceUSD'])
+        
+        # Second ID
+        data = getResponse(query.format(id=ids[1]))
+        token_values[pair[1]] = decimal.Decimal(data['token']['derivedETH']) * decimal.Decimal(data['bundle']['ethPriceUSD'])
+
 def fillPairs(pairs):
     query = """
     {
-        pools(first:50, orderBy:volumeUSD, orderDirection:desc) {
+        pools(first:40, orderBy:volumeUSD, orderDirection:desc) {
             id
             token0 {
                 symbol
@@ -105,10 +128,25 @@ def updatePrices(pairs):
     # slippage = decimal.Decimal("0.004")
     # price_impact = decimal.Decimal("0.005")
     # for pair in pairs:
-    #     token0_price = decimal.Decimal(pairs_info[pair]['token0Price'])
-    #     token1_price = decimal.Decimal(pairs_info[pair]['token1Price'])
+        # token0_price = decimal.Decimal(pairs_info[pair]['token0Price'])
+        # token1_price = decimal.Decimal(pairs_info[pair]['token1Price'])
 
     #     token0_price -= (slippage * token0_price + price_impact * token0_price)
     #     token1_price -= (slippage * token1_price + price_impact * token1_price)
     #     pairs_price[pair] = (token0_price, token1_price)
-    
+
+
+def getActualPrice(pair):
+    slippage = 0.005
+    price_impact = 0.005
+
+    token0_price = decimal.Decimal(pairs_info[pair]['token0Price'])
+    token1_price = decimal.Decimal(pairs_info[pair]['token1Price'])
+
+    token0_price = token0_price * decimal.Decimal(1-slippage)
+    token1_price = token1_price * decimal.Decimal(1-slippage)
+
+    token0_price = token0_price * decimal.Decimal(1-price_impact)
+    token1_price = token1_price * decimal.Decimal(1-price_impact)
+
+    return (token0_price, token1_price)

@@ -4,7 +4,6 @@ import multiprocessing
 from functools import partial
 import decimal
 
-
 num_processes = multiprocessing.cpu_count()
 pairs_id = {}
 pairs_info = {}
@@ -117,4 +116,23 @@ def updatePrices(pairs):
         first = decimal.Decimal(pairs_info[pair]['token0Price'])
         second = decimal.Decimal(pairs_info[pair]['token1Price'])
         pairs_price[pair] = (first, second)
+
+def getActualPrice(pair, size=1):
+    slippage = 0.005
+    reserve_0 = decimal.Decimal(pairs_info[pair]['reserve0'])
+    reserve_1 = decimal.Decimal(pairs_info[pair]['reserve1'])
+    const_product = reserve_0 * reserve_1
+    
+    # Price impact
+    new_price_0 = (const_product / ((reserve_1 + size) ** 2))
+    new_price_1 = (const_product / ((reserve_0 + size) ** 2))
+
+    # Slippage
+    new_price_0 = new_price_0 * decimal.Decimal(1-slippage)
+    new_price_1 = new_price_1 * decimal.Decimal(1-slippage)
+
+    # Transaction fees
+
+
+    return (new_price_0, new_price_1)
 
