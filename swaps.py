@@ -36,23 +36,22 @@ def checkSwap(optimal_size, pair, amts, spot_prices, gas_cost):
         return (optimal_size, final_out, pair, exchange_order, amts[0])
     else:
         return None
-    # uniswap_price = prices[0]
-    # sushiswap_price = prices[1]
-
-    # if (Decimal(abs(uniswap_price - sushiswap_price)) / (uniswap_price)) > Decimal(0.05):
-    #     return True
 
 def printSwap(swap):
     print("Swap", swap[0], "of", swap[2][1], "for about", swap[4], "of", swap[2][0], "on", swap[3][0], "and swap it for about", swap[1], "of", swap[2][1], "on", swap[3][1])
-    print("Profit: $", (swap[1] - swap[0]) * uniswap.token_values[swap[2][1]])
+    #print("Profit: $", (swap[1] - swap[0]) * uniswap.token_values[swap[2][1]])
 
 def getSwap(pair, gas_cost):
 
     # Get the optimum size for the transaction
     reserve_0 = Decimal(sushiswap.pairs_info[pair]['reserve0'])
     reserve_1 = Decimal(sushiswap.pairs_info[pair]['reserve1'])
+
     optimal_size = (Decimal(math.sqrt(gas_cost)) * reserve_1) / (Decimal(math.sqrt(reserve_0 * Decimal(uniswap.token_values[pair[0]]))) - Decimal(math.sqrt(gas_cost)))
-    optimal_size *= Decimal(5)
+    optimal_size *= Decimal(2)
+
+    if (optimal_size / reserve_1) >= 0.01:
+        return None
     if optimal_size < Decimal(0) or optimal_size > Decimal(100000):
         return None
 
@@ -63,6 +62,9 @@ def getSwap(pair, gas_cost):
 
     # Unnatural Discrepancy
     if (abs(spot_prices[0][0] - spot_prices[1][0]) / spot_prices[0][0]) > Decimal(1):
+        return None
+    
+    if ((spot_prices[0][0] * optimal_size) / reserve_0) >= 0.01:
         return None
 
     usd_vals = (uniswap.token_values[pair[0]], uniswap.token_values[pair[1]])
@@ -77,8 +79,6 @@ def getSwap(pair, gas_cost):
     # Return swap if profit to be made. Else None
     swap = checkSwap(optimal_size, pair, realized_prices, spot_prices, gas_cost)
     if swap is not None:
-        print(optimal_size, "of", pair[1], "for", pair[0])
-        print(pair, ":", spot_prices)
         return swap
     else:
         return None
@@ -95,6 +95,7 @@ def getSwaps(pairs):
             swaps.append(res)
     
     for swap in swaps:
+        print()
         printSwap(swap)
-        #print("Swap", swap[0], "of", swap[1][1], "for", swap[1][0], "on", swap[2][0], "and sell it on", swap[2][1], ". \n Spead of $", abs(swap[3][0] - swap[3][1]) * uniswap.token_values[swap[1][0]], "/", abs(swap[3][0] - swap[3][1]), swap[1][0])
+        print()
     return swaps

@@ -95,12 +95,14 @@ def getPairInfo(pair, pairs_id):
 
     if data is None:
         print("Pool not found for:", pair)
-        print("Retrying...")
-        return getPairInfo(pair)
+        return None
     
     return data['pairs'][0]
 
+
 def updatePairsInfo(pairs):
+    toRemove = []
+
     pool = multiprocessing.Pool(processes=num_processes)
     partial_func = partial(getPairInfo, pairs_id=pairs_id)
     result = pool.map(partial_func, pairs)
@@ -108,14 +110,34 @@ def updatePairsInfo(pairs):
     pool.join()
 
     for res, pair in zip(result, pairs):
+        if res is None:
+            toRemove.append(pair)
+            continue
         pairs_info[pair] = res
+
+    for pair in toRemove:
+        pairs.remove(pair)
+
+def updatePrice(pair, pairs_info):
+    first = decimal.Decimal(pairs_info[pair]['token0Price'])
+    second = decimal.Decimal(pairs_info[pair]['token1Price'])
+
+    return (first, second)
 
 def updatePrices(pairs):
     # update the prices array
-    for pair in pairs:
-        first = decimal.Decimal(pairs_info[pair]['token0Price'])
-        second = decimal.Decimal(pairs_info[pair]['token1Price'])
-        pairs_price[pair] = (first, second)
+    pool = multiprocessing.Pool(processes=num_processes)
+    partial_func = partial(updatePrice, pairs_info=pairs_info)
+    result = pool.map(partial_func, pairs)
+    pool.close()
+    pool.join()
+
+    for res, pair in zip(result, pairs):
+        pairs_price[pair] = res
+    # for pair in pairs:
+    #     first = decimal.Decimal(pairs_info[pair]['token0Price'])
+    #     second = decimal.Decimal(pairs_info[pair]['token1Price'])
+    #     pairs_price[pair] = (first, second)
 
 def getActualPrice(pair, size=1):
     slippage = 0.005
