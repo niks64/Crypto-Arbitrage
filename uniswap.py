@@ -4,6 +4,8 @@ import multiprocessing
 from functools import partial
 from decimal import Decimal
 
+# Code for uniswap 
+
 
 num_processes = multiprocessing.cpu_count()
 pairs_id = {}

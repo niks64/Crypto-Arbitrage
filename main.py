@@ -19,6 +19,22 @@ def updatePrices():
     uniswap.updatePrices(pairs)
     sushiswap.updatePrices(pairs)
 
+def initPhase():
+    init_start = time.perf_counter()
+
+    # Get the most liquid pairs
+    uniswap.fillPairs(pairs)
+
+    # Fill the ids for the pairs
+    fillIds()
+
+    init_end = time.perf_counter()
+    elapsed_time = init_end - init_start
+
+
+    print(f"Intialization Phase: {elapsed_time: .2f} seconds")
+
+
 def updatePhase():
     update_start = time.perf_counter()
     
@@ -46,23 +62,7 @@ def detectPhase():
     print(f"Detect Phase: {elapsed_time: .2f} seconds")
 
 if __name__ == "__main__":
-
-
-    init_start = time.perf_counter()
-
-    # Get the most liquid pairs
-    uniswap.fillPairs(pairs)
-
-    # Fill the ids for the pairs
-    fillIds()
-    # for pair in pairs:
-    #     print(pair, ":", sushiswap.pairs_id[pair])
-
-    init_end = time.perf_counter()
-    elapsed_time = init_end - init_start
-
-
-    print(f"Intialization Phase: {elapsed_time: .2f} seconds")
+    initPhase()
 
     for i in range(0,5):
         updatePhase()
