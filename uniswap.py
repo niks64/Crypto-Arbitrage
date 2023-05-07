@@ -70,7 +70,7 @@ def fillTokenValues(pairs):
 def fillPairs(pairs):
     query = """
     {
-        pools(first:1000, orderBy:volumeUSD, orderDirection:desc, skip:1000) {
+        pools(first:1000, orderBy:volumeUSD, orderDirection:desc) {
             id
             token0 {
                 symbol
