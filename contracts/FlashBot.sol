@@ -1,93 +1,58 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity 0.8.0;
+pragma abicoder v2;
+
 
 import "hardhat/console.sol";
 
 // Uniswap imports
-import "@uniswap/v3-periphery/contracts/base/PeripheryPayments.sol";
-import "@uniswap/v3-periphery/contracts/base/PeripheryImmutableState.sol";
-import "@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol";
-import "@uniswap/v3-periphery/contracts/libraries/CallbackValidation.sol";
-import "@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol";
-import "@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import '@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3FlashCallback.sol';
+import '@uniswap/v3-core/contracts/libraries/LowGasSafeMath.sol';
+
+import '@uniswap/v3-periphery/contracts/base/PeripheryPayments.sol';
+import '@uniswap/v3-periphery/contracts/base/PeripheryImmutableState.sol';
+import '@uniswap/v3-periphery/contracts/libraries/PoolAddress.sol';
+import '@uniswap/v3-periphery/contracts/libraries/CallbackValidation.sol';
+import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 
 
+contract uniSwapTransactBot is IUniswapV3FlashCallback, PeripheryImmutableState, PeripheryPayments {
 
+    using LowGasSafeMath for uint256;
+    using LowGasSafeMath for int256;
+    address public routerAddress = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506; // sushiswap router address
+    IUniswapRouter public router = IUniswapRouter(routerAddress);
 
+    ISwapRouter public immutable swapRouter;
 
-struct FlashParams {
-    address token0;
-    address token1;
-    uint24 fee1;
-    uint256 amount0;
-    uint256 amount1;
-    string sym0;
-    string sym1;
-}
+    FlashParams p;
 
-struct FlashCallbackData {
-    uint256 amount0;
-    uint256 amount1;
-    address payer;
-    PoolAddress.PoolKey poolKey;
-}
-
-// interface IFlashBot {
-//     function flashArbitrage(string memory first, string memory second, FlashParams memory params) external;
-// }
-
-contract FlashBot {
-
-    
-    function splitStringInfo(string memory input) public pure returns (string memory, string memory, string memory) {
-        bytes memory b = bytes(input);
-        string memory exchange = "";
-        string memory id1 = "";
-        string memory id2 = "";
-
-        uint temp = 0;
-        for (uint i = 0; i < b.length; i++) {
-            if (b[i] == 0x2d) {
-                temp = i + 1;
-                break;
-            }
-            exchange = string(abi.encodePacked(exchange, b[i]));
-        }
-
-        for (uint i = temp; i < b.length; i++) {
-            if (b[i] == 0x2d) {
-                temp = i + 1;
-                break;
-            }
-            id1 = string(abi.encodePacked(id1, b[i]));
-        }
-
-        for (uint i = temp; i < b.length; i++) {
-            id2 = string(abi.encodePacked(id2, b[i]));
-        }
-
-        return (exchange, id1, id2);
+    constructor(
+        ISwapRouter _swapRouter,
+        address _factory,
+        address _WETH9
+    ) PeripheryImmutableState(_factory, _WETH9) {
+        swapRouter = _swapRouter;
     }
 
-    function compareStrings(string memory a, string memory b) public pure returns(bool) {
-        if (bytes(a).length != bytes(b).length) {
-            return false;
-        }
-        
-        for (uint i = 0; i < bytes(a).length; i++) {
-            if (bytes(a)[i] != bytes(b)[i]) {
-                return false;
-            }
-        }
-        
-        return true;
-    }
+    function swapTokens(uint amountIn, uint amountOutMin, uint deadline) external {
+        address[] memory path = new address[](2);
+        path[0] = p.stoken0;
+        path[1] = p.stoken1;
 
-    function transfer_wrapper(address token1, address token2, uint amount_swap) private returns (uint amount_out){
-        TransferHelper.safeApprove(token1, address(swaper), amount_swap);
-        amount_out = swaper.swapTokenMax(token1, token2, amount_swap);
+        // Approve the router to spend token A
+        IERC20(p.stoken0).approve(routerAddress, amountIn);
+
+        // Swap token A for token B
+        swapRouter.swapExactTokensForTokens(
+            amountIn,
+            amountOutMin,
+            path,
+            msg.sender,
+            deadline
+        );
     }
 
     function uniswapV3FlashCallback(
@@ -101,12 +66,90 @@ contract FlashBot {
         address token0 = decoded.poolKey.token0;
         address token1 = decoded.poolKey.token1;
 
-         uint amount_swap = decoded.amount0;
-         
-          
+        uint amount_swap = decoded.amount0;
+
+        TransferHelper.safeApprove(token0, address(swapRouter), decoded.amount0);
+        TransferHelper.safeApprove(token1, address(swapRouter), decoded.amount1);
+
+
+        // Do the first transaction
+        uint256 amountOut0 =
+            swapRouter.exactInputSingle(
+                ISwapRouter.ExactInputSingleParams({
+                    tokenIn: token1,
+                    tokenOut: token0,
+                    fee: decoded.poolFee2,
+                    recipient: address(this),
+                    deadline: block.timestamp,
+                    amountIn: decoded.amount1,
+                    amountOutMinimum: amount0Min,
+                    sqrtPriceLimitX96: 0
+                })
+            );
+
+        address[] memory path = new address[](2);
+        path[0] = p.stoken0;
+        path[1] = p.stoken1;
+        
+        router.swapExactTokensforTokens(
+            amountOut0,
+            decoded.amount1,
+            path,
+            msg.sender,
+            block.timestamp
+        );
+
+        // uint256 amountOut1 =
+        //     swapRouter.exactInputSingle(
+        //         ISwapRouter.ExactInputSingleParams({
+        //             tokenIn: token0,
+        //             tokenOut: token1,
+        //             fee: decoded.poolFee3,
+        //             recipient: address(this),
+        //             deadline: block.timestamp,
+        //             amountIn: decoded.amount0,
+        //             amountOutMinimum: amount1Min,
+        //             sqrtPriceLimitX96: 0
+        //         })
+        //     );
+
+        uint256 amount0Owed = LowGasSafeMath.add(decoded.amount0, fee0);
+        uint256 amount1Owed = LowGasSafeMath.add(decoded.amount1, fee1);
+
+        TransferHelper.safeApprove(token0, address(this), amount0Owed);
+        TransferHelper.safeApprove(token1, address(this), amount1Owed);
+
+        if (amount0Owed > 0) pay(token0, address(this), msg.sender, amount0Owed);
+        if (amount1Owed > 0) pay(token1, address(this), msg.sender, amount1Owed);
+
+        if (amountOut0 > amount0Owed) {
+            uint256 profit0 = LowGasSafeMath.sub(amountOut0, amount0Owed);
+
+            TransferHelper.safeApprove(token0, address(this), profit0);
+            pay(token0, address(this), decoded.payer, profit0);
+        }
     }
 
-    function flashArbitrage(FlashParams memory params) external view {
+    struct FlashParams {
+        address token0;
+        address token1;
+        address stoken0;
+        address stoken1;
+        uint24 fee1;
+        uint256 amount0;
+        uint256 amount1;
+        uint24 fee2;
+        uint24 fee3;
+    }
+
+    struct FlashCallbackData {
+        uint256 amount0;
+        uint256 amount1;
+        address payer;
+        PoolAddress.PoolKey poolKey;
+    }
+
+    function initFlash(FlashParams memory params) external {
         // (string memory e1, string memory id1, string memory id2) = splitStringInfo(first);
         // (string memory e2, string memory id3, string memory id4) = splitStringInfo(second);
 
@@ -114,6 +157,8 @@ contract FlashBot {
         // console.log(id1, " ", id2);
         // console.log(e2, "\n");
         // console.log(id3, " ", id4);
+
+        p = params;
 
         PoolAddress.PoolKey memory poolKey =
             PoolAddress.PoolKey({token0: params.token0, token1: params.token1, fee: params.fee1});
@@ -129,13 +174,12 @@ contract FlashBot {
                     amount0: params.amount0,
                     amount1: params.amount1,
                     payer: msg.sender,
-                    poolKey: poolKey
+                    poolKey: poolKey,
+                    poolFee2: params.fee2,
+                    poolFee3: params.fee3
                 })
             )
         );
-
-        IERC20(params.sym0).transfer(address(this), params.amount0);
-        IERC20(params.sym1).transfer(address(this), params.amount1);
 
     }
 }

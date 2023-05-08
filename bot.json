@@ -1,0 +1,49 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "first",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "second",
+				"type": "string"
+			}
+		],
+		"name": "flashArbitrage",
+		"outputs": [],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "input",
+				"type": "string"
+			}
+		],
+		"name": "splitStringInfo",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "pure",
+		"type": "function"
+	}
+]
