@@ -10,40 +10,40 @@ from decimal import Decimal
 
 
 pairs = []
-w3 = Web3(Web3.HTTPProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID'))
-account_1 = 'INPUTACCOUNT1'
-private_key1 = 'INPUTPRIVATEKEY'
-account_2 = '0xf8e81D47203A594245E36C48e151709F0C19fBe8'
-with open('bot.json', 'r') as f:
-    contract_abi = json.load(f)
+# w3 = Web3(Web3.HTTPProvider('https://mainnet.infura.io/v3/YOUR-PROJECT-ID'))
+# account_1 = 'INPUTACCOUNT1'
+# private_key1 = 'INPUTPRIVATEKEY'
+# account_2 = '0xf8e81D47203A594245E36C48e151709F0C19fBe8'
+# with open('bot.json', 'r') as f:
+#     contract_abi = json.load(f)
 
-contract = Contract.from_abi('Arbitrageur', account_2, contract_abi)
+# contract = Contract.from_abi('Arbitrageur', account_2, contract_abi)
 
 
 def fillIds():
     sushiswap.fillIds(pairs)
 
-def sendSwap(swap):
-    Chain_id = web3.eth.chain_id
-    nonce = w3.eth.getTransactionCount(account_1)
-    struct_data = {
-        'token0': uniswap.pairs_id[swap[2]][1],
-        'token1': uniswap.pairs_id[swap[2]][0],
-        'stoken0': sushiswap.pairs_id[swap[2]][1],
-        'stoken1': sushiswap.pairs_id[swap[2]][0],
-        'fee1': Decimal(0.003) * swap[0],
-        'amount0': 0,
-        'amount1': swap[0],
-        'fee2': Decimal(0.003) * swap[0],
-        'fee3': Decimal(0.003) * swap[0],
-    }
+# def sendSwap(swap):
+#     Chain_id = web3.eth.chain_id
+#     nonce = w3.eth.getTransactionCount(account_1)
+#     struct_data = {
+#         'token0': uniswap.pairs_id[swap[2]][1],
+#         'token1': uniswap.pairs_id[swap[2]][0],
+#         'stoken0': sushiswap.pairs_id[swap[2]][1],
+#         'stoken1': sushiswap.pairs_id[swap[2]][0],
+#         'fee1': Decimal(0.003) * swap[0],
+#         'amount0': 0,
+#         'amount1': swap[0],
+#         'fee2': Decimal(0.003) * swap[0],
+#         'fee3': Decimal(0.003) * swap[0],
+#     }
 
-    call_function = contract.functions.initFlash(struct_data).buildTransaction({"chainId": Chain_id, "from": account_1, "nonce": nonce})
+#     call_function = contract.functions.initFlash(struct_data).buildTransaction({"chainId": Chain_id, "from": account_1, "nonce": nonce})
 
-    signed_tx = web3.eth.account.sign_transaction(call_function, private_key=private_key1)
-    send_tx = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    tx_receipt = web3.eth.wait_for_transaction_receipt(send_tx)
-    print(tx_receipt)
+#     signed_tx = web3.eth.account.sign_transaction(call_function, private_key=private_key1)
+#     send_tx = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+#     tx_receipt = web3.eth.wait_for_transaction_receipt(send_tx)
+#     print(tx_receipt)
 
 
 

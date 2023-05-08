@@ -99,20 +99,6 @@ contract uniSwapTransactBot is IUniswapV3FlashCallback, PeripheryImmutableState,
             block.timestamp
         );
 
-        // uint256 amountOut1 =
-        //     swapRouter.exactInputSingle(
-        //         ISwapRouter.ExactInputSingleParams({
-        //             tokenIn: token0,
-        //             tokenOut: token1,
-        //             fee: decoded.poolFee3,
-        //             recipient: address(this),
-        //             deadline: block.timestamp,
-        //             amountIn: decoded.amount0,
-        //             amountOutMinimum: amount1Min,
-        //             sqrtPriceLimitX96: 0
-        //         })
-        //     );
-
         uint256 amount0Owed = LowGasSafeMath.add(decoded.amount0, fee0);
         uint256 amount1Owed = LowGasSafeMath.add(decoded.amount1, fee1);
 
