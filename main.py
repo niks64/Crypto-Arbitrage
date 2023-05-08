@@ -91,7 +91,7 @@ def detectPhase():
     detect_start = time.perf_counter()
     
     orders = swaps.getSwaps(pairs)
-    if len(orders) != 0: sendSwap(orders[0])
+    #if len(orders) != 0: sendSwap(orders[0])
     
     detect_end = time.perf_counter()
     elapsed_time = detect_end - detect_start
