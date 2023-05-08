@@ -47,9 +47,9 @@ def getSwap(pair, gas_cost):
     reserve_0 = Decimal(sushiswap.pairs_info[pair]['reserve0'])
     reserve_1 = Decimal(sushiswap.pairs_info[pair]['reserve1'])
 
-    # optimal_size = (Decimal(math.sqrt(gas_cost)) * reserve_1) / (Decimal(math.sqrt(reserve_0 * Decimal(uniswap.token_values[pair[0]]))) - Decimal(math.sqrt(gas_cost)))
-    # optimal_size *= Decimal(2)
-    optimal_size = Decimal(1)
+    optimal_size = (Decimal(math.sqrt(gas_cost)) * reserve_1) / (Decimal(math.sqrt(reserve_0 * Decimal(uniswap.token_values[pair[0]]))) - Decimal(math.sqrt(gas_cost)))
+    optimal_size *= Decimal(2)
+    #optimal_size = Decimal(1)
 
     if (optimal_size / reserve_1) >= 0.01:
         return None
